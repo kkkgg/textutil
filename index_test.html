@@ -3,16 +3,121 @@
   <head>
     <meta charset="utf-8">
     <title>textutil</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <style>
+      .url_input {
+        width: 400px;
+      }
+
+      .textarea1 {
+        width: 400px;
+        height: 400px;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <!-- built files will be auto injected -->
-    <div id="view"></div>
+    <div id="app">
+      <div>
+        <input class="url_input" v-model="url">
+        <input type="button" value="get" v-on:click="getUrlText">
+      </div>
+      <div>
+        <textarea class="textarea1" v-model="text"></textarea>
+      </div>
+      <div>
+        <input type="button" value="shuffle" v-on:click="shuffle">
+      </div>
+      <div>
+        <textarea class="textarea1">{{ res_text }}</textarea>
+      </div>
+      <div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+    <script src="https://unpkg.com/vuex@3.1.2/dist/vuex.js"></script>
     <script>
-      fetch((new URLSearchParams(location.href.replace(/^[^?]+\?/,""))).get("url"))
-        .then(response => response.text())
-        .then(text => (new DOMParser()).parseFromString(text, "text/html").body.getElementsByTagName("pre")[0].innerText)
-        .then(text => document.getElementById("view").appendChild(document.createTextNode(text)))
+      var store = new Vuex.Store({
+        state: {
+          text: "",
+          url: ""
+        },
+        getters: {
+          lines: function(state){
+            return store.state.text.split(/\s*[\r\n]+\s*/).filter(ele => ele != "");
+          },
+          shuffle: function(state, getters){
+            return function(){
+              return getters.lines.sort(function (a,b){
+                var i = Math.ceil(Math.random()*100)%2;
+                if(i == 0){return -1;}
+                else{return 1;}
+              });
+            };
+          }
+        },
+        mutations: {
+          url (state, url) {
+            state.url = url;
+          },
+          text (state, text) {
+            state.text = text;
+          }
+        },
+        actions: {
+          url ({commit}, params) {
+            console.log({fetch_url: params});
+            fetch(params.url)
+              .then(response => response.text())
+              .then(text => (new DOMParser()).parseFromString(text, "text/html").body.getElementsByTagName("pre")[0].innerText)
+              .then(text => {
+                commit("url", params.url);
+                commit("text", text);
+              });
+          }
+        }
+      });
+
+      var app = new Vue({
+        el: '#app',
+        data: {
+          res_text: "",
+          url_tmp: ""
+        },
+        store,
+        computed: {
+          text: {
+            get () {
+              return this.$store.state.text;
+            },
+            set (value) {
+              this.$store.commit("text", value);
+            }
+          },
+          url: {
+            get () {
+              return this.$store.state.url;
+            },
+            set (value) {
+              this.url_tmp = value;
+            }
+          }
+        },
+        methods: {
+          getUrlText: function(){
+            this.$store.dispatch("url", {url: (this.url_tmp || this.$store.state.url)});
+          },
+          shuffle: function(){
+            this.res_text = this.$store.getters.shuffle().join("\n");
+          }
+        }
+      });
+
+      store.dispatch("url", {url: (new URLSearchParams(location.href.replace(/^[^?]+\?/,""))).get("url")});
+
     </script>
   </body>
 </html>
