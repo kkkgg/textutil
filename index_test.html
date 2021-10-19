@@ -26,6 +26,10 @@
       </div>
       <div>
         <input type="button" value="shuffle" v-on:click="shuffle">
+        <input type="button" value="random_record" v-on:click="random_record">
+        <input type="button" value="new_question" v-on:click="new_question">
+        <input type="button" value="question" v-on:click="question">
+        <input type="button" value="view_record" v-on:click="view_record">
       </div>
       <div>
         <textarea class="textarea1">{{ res_text }}</textarea>
@@ -57,6 +61,34 @@
                 else{return 1;}
               });
             };
+          },
+          records: function(state, getters){
+            let lines = getters.lines.map(line => {
+              // TODO csv対応
+              return line.split(',');
+            });
+            const headers = lines.shift();
+            return lines.map(line => {
+              let record = {};
+              for(const i in headers) {
+                record[headers[i]] = line[i];
+              }
+              return record;
+            });
+          },
+          shuffle_records: function(state, getters){
+            return function(){
+              return getters.records.sort(function (a,b){
+                var i = Math.ceil(Math.random()*100)%2;
+                if(i == 0){return -1;}
+                else{return 1;}
+              });
+            };
+          },
+          random_record: function(state, getters){
+            return function(){
+              return getters.shuffle_records()[0];
+            };
           }
         },
         mutations: {
@@ -85,7 +117,8 @@
         el: '#app',
         data: {
           res_text: "",
-          url_tmp: ""
+          url_tmp: "",
+          record: ""
         },
         store,
         computed: {
@@ -112,6 +145,22 @@
           },
           shuffle: function(){
             this.res_text = this.$store.getters.shuffle().join("\n");
+          },
+          random_record: function(){
+            this.res_text = this.$store.getters.random_record();
+          },
+          set: function(){
+            this.record = this.$store.getters.random_record();
+          },
+          question: function(){
+            this.res_text = this.record["question"];
+          },
+          view_record: function(){
+            this.res_text = this.record;
+          },
+          new_question: function(){
+            this.set();
+            this.question();
           }
         }
       });
