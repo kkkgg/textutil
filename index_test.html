@@ -165,6 +165,7 @@
         }
       });
 
+      // TODO new URLに書き換える
       store.dispatch("url", {url: (new URLSearchParams(location.href.replace(/^[^?]+\?/,""))).get("url")});
 
     </script>
